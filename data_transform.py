@@ -42,6 +42,24 @@ def str_to_list(s):
         res = []
     return res
 
+def expand_features2(col):
+    import time
+    start_time = time.time()
+    new_cols = set()
+    for i, row in enumerate(col):
+        if row > [] and len(row[0]) > 1:
+            new_cols = new_cols.union(row)
+    ndf = pd.DataFrame(columns=new_cols)
+    for i,row in enumerate(col):
+    #     ooo = LabelBinarizer()
+    #     val = ooo.fit_transform(row).T.sum(axis=0)
+        if len(row) > 0 and row[0] > '': 
+            ndf.loc[i, row] = 1 
+        else:
+            ndf.loc[i] = 0
+    print("--- %s seconds ---" % (time.time() - start_time))
+    return ndf
+
 def expand_features(col):
     col = col.apply(str_to_list)
     ndf = pd.DataFrame()
