@@ -13,7 +13,7 @@ def train_model(X_train, y_train, clfs=[]):
     """
     clf_scores = []
     if not len(clfs):
-        clfs = [LogisticRegression()]
+        clfs = [LogisticRegression().fit(X_train, y_train)]
 
     for idx, clf in enumerate(clfs):
         scores = cross_val_score(clf, X_train, y_train, cv=5, scoring=make_scorer(f1_score, average='weighted'))
@@ -34,7 +34,7 @@ def tune_model(X_train, y_train, clfs=None, params=None, n_iter=10, grid_search=
 
     if not (clfs and params):
         clfs = [
-            LogisticRegression(), 
+#             LogisticRegression(), 
             RandomForestClassifier(n_estimators=20), 
             XGBClassifier(base_score=0.5, colsample_bylevel=1, colsample_bytree=0.8,
                gamma=0, learning_rate=0.1, max_delta_step=0, max_depth=10,
@@ -43,29 +43,19 @@ def tune_model(X_train, y_train, clfs=None, params=None, n_iter=10, grid_search=
                scale_pos_weight=1, seed=0, silent=True, subsample=0.8)
         ]
         params = [
-            {'solver': ['liblinear'], 'penalty': ['l1', 'l2'], 'C': [.001, .01, .5, 0.1, 0.5]},
+#             {'solver': ['liblinear'], 'penalty': ['l1', 'l2'], 'C': [.001, .01, 0.5]},
             {"max_depth": [3, 5, 10, 12], "bootstrap": [True, False], "criterion": ["gini", "entropy"]},
             {'reg_lambda': [0.1, 0.5, 1.5], 'max_depth': [10, 20, 15], 'n_estimators': [100, 120, 150]
 }
         ]
     for clf, param in zip(clfs, params):
         if grid_search:
-            rscv = GridSearchCV(clf, param_grid=params)
+            rscv = GridSearchCV(clf, param_grid=param)
         else:
             rscv = RandomizedSearchCV(clf, param_distributions=param, n_iter=n_iter)
         tuned_models += [rscv.fit(X_train, y_train)]
 
     return tuned_models
 
-y = np.array(data_clean.interest_level)
-X = np.array(data_clean.drop('interest_level', axis=1))
-Xtrain, ytrain, Xtest, ytest = split_test_train(X, y)
-Xtrain.shape, ytrain.shape, Xtest.shape, ytest.shape
-clfs = tune_model(Xtrain, ytrain)
 
-classifier = train_model(Xtrain, ytrain, clfs)
 
-pred = classifier.predict(Xtest)
-
-print(pd.DataFrame(confusion_matrix(ytest, pred, labels=[0,1,2])))
-print(classification_report(y_true=ytest, y_pred=pred, target_names=_classes))
