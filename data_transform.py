@@ -9,9 +9,6 @@ import pdb
 from collections import defaultdict
 from sklearn.decomposition import PCA, NMF
 
-data_train = pd.read_csv("../data/train_sample.csv")
-sub_test = pd.read_csv("../data/test_sample.csv")
-
 #
 # np.where(pd.isnull(data.price))
 
@@ -67,7 +64,7 @@ def expand_features(col):
     for i, row in enumerate(col):
         if row > [] and len(row) > 1:
             new_cols = new_cols.union(row)
-    print time.time()
+    print (time.time())
     for idx, row in enumerate(col):
         new = defaultdict(list)
         exc = new_cols.difference(row) 
@@ -95,10 +92,4 @@ def reduce_features(df):
     drf = PCA(n_components=20)
     karray = drf.fit_transform(karray)
     return pd.DataFrame(karray, columns=["pc%s" % str(x) for x in range(1,21)])
-
-
-k = expand_features(data_train.features)
-
-kcomps_ = reduce_features(k)
-data_train = data_train.merge(kcomps_, left_index=True, right_index=True)
 
