@@ -1,5 +1,4 @@
 # Data Preprocessing
-%matplotlib inline
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -39,8 +38,8 @@ def tointfloat(x, dtype=float):
         pat = re.compile(pattern=r'[0-9]+')
         mat = pat.match(x)
         if mat:
-            return mat.group(0) 
-        else: 
+            return mat.group(0)
+        else:
             return np.nan
 
 def to_float_hard(x):
@@ -54,7 +53,7 @@ def scale_variable(var, sd=False):
         var = (var - var.mean())/var.std()
     else:
         var = (var - var.min())/(var.max()-var.min())
-    
+
     return var
 
 #     pdb.set_trace()
@@ -67,25 +66,28 @@ def conv_geo_tocx(df):
     # StandardScaler prefers a Matrix instead of a vector so
     lat = df['latitude'].apply(to_float_hard).fillna(0).values
     lon = df['longitude'].apply(to_float_hard).fillna(0).values
-    
+
     R = 1
     df['xcx'] = MinMaxScaler().fit_transform(R * np.cos(lat) * np.cos(lon))
     df['ycx'] = MinMaxScaler().fit_transform(R * np.cos(lat) * np.sin(lon))
     df['zcx'] = MinMaxScaler().fit_transform(R * np.sin(lat))
-    
-    
+
+
     return df
-        
+
 import time
 def impute(col):
-    imputer = Imputer(missing_values=-1, strategy="median", axis=0)
-    return imputer.fit_transform(col)
+    # imputer = Imputer(missing_values=-1, strategy="median")
+    idx = np.where(col == -1)
+    col[idx] = col.median()
+    return col
 
 def munge_bedbath(col):
+    pdb.set_trace()
     col = col.fillna(-1)
     col = col.apply(tointfloat)
-    col = impute(col.reshape(-1,1)).reshape(-1)
-    return col.astype(float)
+    col = impute(col)
+    return col.reshape(-1).astype(float)
 
 
 
@@ -106,7 +108,7 @@ def str_to_list(s):
             res = list(np.array(res)[idx])
         except:
             pdb.set_trace()
-    elif type(s) != list: 
+    elif type(s) != list:
         res = []
     else:
         res = s
@@ -114,13 +116,13 @@ def str_to_list(s):
 
 def split_to_len(x):
     try:
-        
+
         l = len(x.split(','))
     except:
         l = 0
-        
+
     return l
-        
+
 
 def expand_features(col):
     import time
@@ -130,10 +132,10 @@ def expand_features(col):
     for i, row in enumerate(col):
         if row > [] and len(row) > 1:
             new_cols = new_cols.union(row)
-    print time.time()
+    print (time.time())
     for idx, row in enumerate(col):
         new = defaultdict(list)
-        exc = new_cols.difference(row) 
+        exc = new_cols.difference(row)
         if row > [] and len(row) > 1:
             for nc in set(row):
                 new[nc].append(1)
@@ -142,9 +144,9 @@ def expand_features(col):
         try:
             tmp = pd.DataFrame(new)
             ndf = pd.concat((ndf, tmp), axis=0)
-        except Exception, e:
-            print e
-            print '**********'
+        except Exception as e:
+            print (e)
+            print ('**********')
             continue
         del new
     print("--- %s seconds ---" % (time.time() - start_time))
@@ -163,12 +165,12 @@ def expand_features2(col):
     #     ooo = LabelBinarizer()
     #     val = ooo.fit_transform(row).T.sum(axis=0)
         try:
-            if len(row) > 0 and row[0] > '': 
-                ndf.loc[i, row] = 1 
+            if len(row) > 0 and row[0] > '':
+                ndf.loc[i, row] = 1
             else:
                 ndf.loc[i] = 0
         except Exception as e:
-            print e
+            print(e)
             continue
     print("--- %s seconds ---" % (time.time() - start_time))
     return ndf
