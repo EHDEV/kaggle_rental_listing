@@ -12,7 +12,11 @@ data_clean['price'] = scale_variable(data_clean['price'])
 
 data_clean = conv_geo_tocx(data_clean)
 
+kcomps_ = reduce_features(new_feats, ncomps=8)
 
+data_clean_merged = data_clean.merge(kcomps_, left_index=True, right_index=True)
+
+del data_clean_merged['features']
     
 il_fix = []
 iremove = []
