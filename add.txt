@@ -1,0 +1,67 @@
+
+data_train = pd.read_csv("../bigger_sample.csv", encoding='utf-8', engine='python', sep=',')
+sub_test = pd.read_csv("../data/test_sample.csv")
+
+data_clean = data_train.copy()
+nulls = data_clean['building_id'].isnull()
+data_clean = data_clean[~nulls].reset_index(drop=True)
+data_clean['number_of_photos'] = data_clean.photos.apply(split_to_len)
+data_clean['bedrooms'] = munge_bedbath(data_clean.bedrooms)
+data_clean['bathrooms'] = munge_bedbath(data_clean.bathrooms)
+data_clean['price'] = scale_variable(data_clean['price'])
+
+data_clean = conv_geo_tocx(data_clean)
+
+
+    
+il_fix = []
+iremove = []
+for i, d in enumerate(data_clean.interest_level):
+    if len(str(d)) > 6:
+        if data_clean.building_id.loc[i] in ['medium', 'high', 'low']:
+            il_fix += [i]
+        else: 
+            iremove += [i]
+    elif str(d).lower() in ['nan', '']:
+        iremove += [i]
+        
+data_clean.drop(iremove, inplace=True)
+data_clean.interest_level.loc[il_fix] = data_clean.building_id.loc[il_fix]
+data_clean.drop(data_clean[~data_clean.interest_level.isin(['medium', 'high', 'low'])].index, inplace=True)
+data_clean['interest_level'], _classes = encode_target(data_clean.interest_level)
+data_clean = data_clean[~data_clean.price.isnull()][~data_clean.longitude.isnull()]
+
+exclude_columns = [
+   'building_id', 'listing_id', 'photos', 'Unnamed: 0', 'latitude', u'description',u'longitude', u'display_address', u'manager_id', 
+    u'street_address', u'created']
+
+
+for ec in exclude_columns:
+    try:
+        del data_clean[ec]
+    except:
+        print 'not deleted %s ' % ec
+        continue
+
+# #apply the function to the original df:
+# outlier = is_outlier(data_clean.price)
+# #filter to only non-outliers:
+# data_clean = data_clean[~(outlier)]
+
+clfs = tune_model(Xtrain, ytrain)
+
+classifier = train_model(Xtrain, ytrain, clfs)
+
+pred = classifier.predict(Xtest)
+
+print(pd.DataFrame(confusion_matrix(ytest, pred, labels=[0,1,2])))
+print(classification_report(y_true=ytest, y_pred=pred, target_names=_classes))
+
+
+
+
+y = np.array(data_clean.interest_level)
+X = np.array(data_clean.drop('interest_level', axis=1))
+Xtrain, ytrain, Xtest, ytest = split_test_train(X, y)
+Xtrain.shape, ytrain.shape, Xtest.shape, ytest.shape
+
